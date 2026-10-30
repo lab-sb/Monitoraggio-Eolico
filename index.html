@@ -135,7 +135,7 @@ tr.forecast { background:#f2f8ff; }
   <label for="period">Periodo:</label>
   <select id="period">
     <option value="forecast">Previsione prossimi 7 giorni</option>
-    <option value="all" selected>Storico 7 giorni + previsione 7 giorni</option>
+    <option value="all" selected>Storico 2 giorni + previsione 2 giorni</option>
     <option value="past">Storico ultimi 7 giorni</option>
   </select>
   <button class="primary" id="refresh">Aggiorna dati</button>
@@ -252,28 +252,29 @@ function fmt(value) {
 }
 
 function getRows() {
-  if (datasets.length !== 2) return [];
-  const times = datasets[0].hourly.time;
-  const now = Date.now();
-  const mode = $("period").value;
-
-  return times.map((time,i) => ({
-    time,
-    timestamp:new Date(time).getTime(),
-    future:new Date(time).getTime()>now,
-    values:[
-      datasets[0].hourly.wind_speed_80m[i],
-      datasets[0].hourly.wind_speed_120m[i],
-      datasets[1].hourly.wind_speed_80m[i],
-      datasets[1].hourly.wind_speed_120m[i]
-    ]
-  })).filter(row => {
-    if (mode==="forecast") return row.future;
-    if (mode==="past") return !row.future;
-    return true;
-  });
+    if (datasets.length !== 2) return [];
+    const times = datasets[0].hourly.time;
+    const now = Date.now();
+    const twoDays = 2 * 24 * 60 * 60 * 1000;
+    const mode = $("period").value;
+    return times.map((time,i) => ({
+        time,
+        timestamp:new Date(time).getTime(),
+        future:new Date(time).getTime()>now,
+        values:[
+            datasets[0].hourly.wind_speed_80m[i],
+            datasets[0].hourly.wind_speed_120m[i],
+            datasets[1].hourly.wind_speed_80m[i],
+            datasets[1].hourly.wind_speed_120m[i]
+        ]
+    })).filter(row => {
+        if (mode==="forecast") return row.future;
+        if (mode==="past") return !row.future;
+        return row.timestamp >= now - twoDays &&
+              row.timestamp <= now + twoDays;
+    });
 }
-
+  
 function renderLatest() {
   if (!datasets.length) return;
   const now = Date.now();
